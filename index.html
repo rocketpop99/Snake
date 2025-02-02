@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PyScript Snake Game</title>
+  <!-- Include PyScript's CSS and JavaScript -->
+  <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+  <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+  <style>
+    /* Basic styling for a centered canvas */
+    body {
+      margin: 0;
+      background: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    canvas {
+      border: 2px solid #fff;
+      background: #111;
+    }
+  </style>
+</head>
+<body>
+  <!-- Game canvas -->
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+  <!-- PyScript block with our Python code -->
+  <py-script>
+import random
+from js import document, window
+
+# Set up the canvas and drawing context
+canvas = document.getElementById("gameCanvas")
+ctx = canvas.getContext("2d")
+
+# Game settings
+tile_size = 20
+cols = canvas.width // tile_size
+rows = canvas.height // tile_size
+
+# Initialize game state: snake is a list of (x, y) segments.
+snake = [(5, 5), (4, 5), (3, 5)]
+direction = (1, 0)  # initially moving right
+# Place the first apple at a random grid location.
+apple = (random.randint(0, cols - 1), random.randint(0, rows - 1))
+
+speed = 100  # time (in milliseconds) between moves
+last_time = 0
+
+def draw():
+    # Clear the canvas
+    ctx.fillStyle = "#111"
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    
+    # Draw the apple
+    ctx.fillStyle = "red"
+    ctx.fillRect(apple[0] * tile_size, apple[1] * tile_size, tile_size, tile_size)
+    
+    # Draw the snake
+    ctx.fillStyle = "lime"
+    for segment in snake:
+        ctx.fillRect(segment[0] * tile_size, segment[1] * tile_size, tile_size, tile_size)
+
+def update():
+    global snake, apple
+    # Calculate new head position using the current direction.
+    head = snake[0]
+    new_head = ((head[0] + direction[0]) % cols, (head[1] + direction[1]) % rows)
+    
+    # Check for self-collision: if the snake runs into itself, reset the game.
+    if new_head in snake:
+        snake[:] = [(5, 5), (4, 5), (3, 5)]
+        return
+    
+    # Add new head position
+    snake.insert(0, new_head)
+    
+    # Check if the snake has eaten the apple.
+    if new_head == apple:
+        # Generate a new apple position that is not on the snake.
+        while True:
+            new_apple = (random.randint(0, cols - 1), random.randint(0, rows - 1))
+            if new_apple not in snake:
+                apple = new_apple
+                break
+    else:
+        # Remove the tail segment if no apple was eaten.
+        snake.pop()
+
+def game_loop(timestamp):
+    global last_time
+    # Move the game forward only if enough time has elapsed.
+    if timestamp - last_time > speed:
+        update()
+        draw()
+        last_time = timestamp
+    window.requestAnimationFrame(game_loop)
+
+def key_down(event):
+    global direction
+    key = event.key
+    # Change the direction based on arrow key input,
+    # ensuring the snake cannot immediately reverse.
+    if key == "ArrowUp" and direction != (0, 1):
+        direction = (0, -1)
+    elif key == "ArrowDown" and direction != (0, -1):
+        direction = (0, 1)
+    elif key == "ArrowLeft" and direction != (1, 0):
+        direction = (-1, 0)
+    elif key == "ArrowRight" and direction != (-1, 0):
+        direction = (1, 0)
+
+# Listen for keyboard events to control the snake.
+document.addEventListener("keydown", key_down)
+# Start the game loop.
+window.requestAnimationFrame(game_loop)
+  </py-script>
+</body>
+</html>
